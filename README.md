@@ -104,7 +104,7 @@ query =
     on: payer_customer.payer_id == p.id,
     left_join: comp in Company,
     on: payer_company.payer_id == p.id,
-    preload: [companies: companies],
+    preload: [companies: :locations],
     where: it.billing_day == ^today
 ```
 
