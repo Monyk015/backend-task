@@ -15,6 +15,7 @@ have a payer entity assigned to them on a one-to-one fashion.
 3. invoice_template
 4. locations
 5. customer
+6. email
 
 ### 2. Customer
 
@@ -22,6 +23,7 @@ have a payer entity assigned to them on a one-to-one fashion.
 2. payer
 3. companies 
 4. user
+5. email
 
 ### 3. Location
 
@@ -61,19 +63,61 @@ Just a generic authentication entity, created for logic separation from a
 customer. For the sake of simplicity has one-to-one relationship with customer.
 
 1. customer
+2. login
+3. password - sha-512 encrypted
 
 ## 2. Database Schema
 
-![Database Schema](http://i.imgur.com/4muKqgO.png "Database Schema")
+![Database Schema](http://i.imgur.com/2CsZf2D.png "Database Schema")
 
 Here's the general outline of what it should look like.
 
-## 3. Pages
-
-### 1. 
-
 ## 3. Main actions
-Default CRUD operations for basic entities will be omitted here for the sake of simplicity.
+Again, for the sake of simplicity some simple actions like
+registration/authorazion are skipped.
 
-### 1. Customer creates Invoice Template
-Customer 
+### 1. Customer manages Companies 
+Companies are a very simple CRUD entities. The only gotcha here is that
+they must create an assosiated payer entity along with them.
+
+### 2. Customer manages Invoice Templates
+Customer can create as many invoice templates as he wants, setting payer for
+each one and including as many companies from the list as he wants. This is
+proposed to be done as a simple drag-and-drop with remaining companies on the
+right side and created invoice templates on the left side. Payer is picked with
+a dropdown menu.
+
+![Manage templates mockup](http://i.imgur.com/jvV78In.png "Manage templates mockup")
+
+Creating relationships for this case is fairly straightforward.
+
+### 3. System sends invoices
+System starts a daily script that checks which invoices are due to be sent that
+day. 
+
+``` elixir
+query = 
+    from it in InvoiceTemplate,
+    join: p in Payer,
+    on: it.id == p.id,
+    left_join: cust in Customer,
+    on: payer_customer.payer_id == p.id,
+    left_join: comp in Company,
+    on: payer_company.payer_id == p.id,
+    preload: [companies: companies],
+    where: it.billing_day == ^today
+```
+
+The query above will yield all invoice templates for the day with associated
+companies and payer information. After that it will form a pdf and send it to an
+email stored in customer/company.
+
+## 4. Development plan
+
+1. authentication
+2. customer CRUD 
+3. company CRUD
+4. invoice management
+5. invoice sending
+
+
